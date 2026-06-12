@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>APAC BD · ToF Target vs Actual Dashboard</title>
+<style>
+  :root{
+    --ink:#11203a; --ink-2:#1c2f50;
+    --paper:#f4f2ec; --card:#ffffff; --line:#dcd7ca; --line-soft:#ece8dd;
+    --signal:#ff5a1f; --signal-soft:#fff1ea;
+    --good:#1f8a5b; --good-soft:#e7f4ec;
+    --warn:#b07400; --warn-soft:#fbf2dd;
+    --bad:#c0341d; --bad-soft:#fbe9e4;
+    --muted:#69748a;
+    --mono:ui-monospace,"SFMono-Regular","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --r:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+  .masthead{background:var(--ink);color:#f3f1ea;padding:26px 22px;border-bottom:3px solid var(--signal)}
+  .masthead .wrap{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .masthead .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--signal);margin:0 0 7px}
+  .masthead h1{font-size:clamp(21px,3vw,28px);margin:0;font-weight:700;letter-spacing:-.015em}
+  .masthead .right{margin-left:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .updated{font-size:13px;color:#aeb9c9}
+  .rfsh{font-family:var(--sans);font-size:14.5px;font-weight:650;background:var(--signal);color:#fff;border:0;border-radius:8px;
+        padding:11px 18px;cursor:pointer;min-height:46px}
+  .rfsh:hover{background:#e64a12}
+  .auto{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;color:#cdd6e2}
+  .auto input{width:18px;height:18px;accent-color:var(--signal)}
+
+  .page{max-width:1120px;margin:0 auto;padding:24px 22px 80px}
+  .banner{background:var(--warn-soft);border:1px solid #e9d9a8;border-radius:9px;padding:13px 16px;font-size:14px;color:#6b4e00;margin-bottom:22px}
+  .banner b{color:#5a4200}
+
+  .section-l{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+
+  /* org rollup */
+  .rollup{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr;gap:16px;margin-bottom:30px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+  .icp-hero{background:linear-gradient(135deg,#11203a,#1c2f50);color:#fff;border:0}
+  .icp-hero .kl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#9fb0cf;font-weight:600}
+  .icp-hero .big{font-family:var(--mono);font-size:34px;font-weight:700;margin:6px 0 2px;line-height:1}
+  .icp-hero .of{font-size:13.5px;color:#c2ccdb}
+  .icp-bar{height:10px;border-radius:99px;background:rgba(255,255,255,.16);margin-top:14px;overflow:hidden}
+  .icp-bar i{display:block;height:100%;background:var(--signal);border-radius:99px}
+  .icp-hero .vsplan{font-size:12.5px;color:#9fb0cf;margin-top:9px}
+
+  .kpi .kl{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .kpi .kv{font-family:var(--mono);font-size:24px;font-weight:600;margin:6px 0 2px;line-height:1}
+  .kpi .kp{font-size:13px;color:var(--muted)}
+  .kpi .kbar{height:7px;border-radius:99px;background:#eee7d8;margin-top:11px;overflow:hidden}
+  .kpi .kbar i{display:block;height:100%;border-radius:99px}
+
+  /* managers */
+  .mgr-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .mgr{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .mgr-h{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line);background:#faf8f2;cursor:pointer}
+  .mgr-h .nm{font-weight:700;font-size:16.5px}
+  .mgr-h .ag{font-size:13px;color:var(--muted)}
+  .mgr-h .ag::before{content:"·";margin:0 8px;color:var(--line)}
+  .mgr-h .chev{margin-left:auto;color:var(--muted);transition:transform .18s;font-size:13px}
+  .mgr.open .chev{transform:rotate(90deg)}
+  .mgr-b{padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+
+  .bar{}
+  .bar .bl{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-bottom:7px}
+  .bar .bl .name{font-weight:600;color:var(--ink-2)}
+  .bar .bl .val{font-family:var(--mono);color:var(--muted)}
+  .bar .track{height:9px;border-radius:99px;background:#eee7d8;overflow:hidden}
+  .bar .track i{display:block;height:100%;border-radius:99px;transition:width .4s}
+  .bar .pc{font-family:var(--mono);font-size:12px;margin-top:6px;font-weight:600}
+
+  .fill-good{background:var(--good)} .txt-good{color:var(--good)}
+  .fill-warn{background:var(--warn)} .txt-warn{color:var(--warn)}
+  .fill-bad{background:var(--bad)}   .txt-bad{color:var(--bad)}
+  .fill-none{background:#cdc6b6}     .txt-none{color:var(--muted)}
+
+  .detail{display:none;border-top:1px solid var(--line-soft);padding:4px 20px 18px}
+  .mgr.open .detail{display:block}
+  .detail table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+  .detail-wrap{overflow:auto}
+  .detail th,.detail td{padding:9px 10px;border-bottom:1px solid var(--line-soft);text-align:left;white-space:nowrap}
+  .detail th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .detail td.num{font-family:var(--mono);text-align:right}
+  .detail .grp{background:#faf8f2;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:700}
+
+  .empty{background:var(--card);border:1px dashed var(--line);border-radius:var(--r);padding:40px;text-align:center;color:var(--muted)}
+
+  @media (max-width:900px){.rollup{grid-template-columns:1fr 1fr;}.icp-hero{grid-column:1/-1}.mgr-grid{grid-template-columns:1fr}}
+  @media (max-width:560px){
+    .masthead .right{margin-left:0;width:100%}
+    .rollup{grid-template-columns:1fr}
+    .mgr-b{grid-template-columns:1fr}
+    .page{padding:20px 16px 70px}
+  }
+</style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">APAC BD · Acquisition Planning</p>
+        <h1>ToF Target vs Actual — Live Dashboard</h1>
+      </div>
+      <div class="right">
+        <label class="auto"><input type="checkbox" id="autoToggle" checked> Auto-refresh</label>
+        <span class="updated" id="updated">—</span>
+        <button class="rfsh" id="refreshBtn">Refresh</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="banner" id="banner" hidden></div>
+
+    <p class="section-l">Team rollup — this month</p>
+    <div class="rollup" id="rollup"></div>
+
+    <p class="section-l">By manager — are leads supplied, SQLs landing, ICP showing up?</p>
+    <div class="mgr-grid" id="mgrGrid"></div>
+  </main>
+
+<script>
+/* ===========================================================
+   CONFIG — same Apps Script Web App URL as the survey.
+   Leave "" to preview with sample data.
+   =========================================================== */
+const ENDPOINT_URL = "";
+const ORG_ICP_TARGET = 50000;     // the 50K ICP lead goal
+const AUTO_MS = 60000;            // auto-refresh interval
+
+/* ---------- Sample data (used when no endpoint / on fetch error) ---------- */
+const SAMPLE = {
+  generatedAt:new Date().toISOString(), orgIcpTarget:ORG_ICP_TARGET,
+  managers:[
+    mk("Jay Gye","Growth Automation",[[40,12,8,400, 31,9,6],[60,9,15,400,44,6,11],[20,10,5,400,18,8,4],[15,6,4,400,12,5,3],[25,8,6,400,15,4,3],[18,5,4,400,10,3,2]]),
+    mk("Casa Hoang","Telestar",[[35,11,7,400,33,10,7],[55,8,12,400,50,8,11],[18,9,5,400,16,8,4],[14,5,3,400,13,5,3],[22,7,5,400,18,6,4],[16,4,3,400,12,3,2]]),
+    mk("Patrick Simeon","ScaleMill",[[50,16,10,400,20,5,3],[70,11,18,400,28,4,7],[22,12,6,400,9,4,2],[16,7,4,400,7,3,1],[30,10,7,400,11,3,2],[20,6,5,400,8,2,2]]),
+    mk("Trang Nguyen","Telestar",[[30,9,6,400,29,9,6],[45,7,10,400,43,7,10],[15,8,4,400,14,7,4],[12,5,3,400,11,4,3],[20,6,4,400,17,5,4],[14,4,3,400,11,3,2]]),
+  ]
+};
+function mk(bd,agency,rows){
+  const labels=[["Marketing","Score A Leads","SQL"],["Marketing Agency",agency,"MQL"],
+    ["AnP","CSP Leads","SQL"],["AnP","Other AnP Leads","SQL"],["Sales Outbound","SDR","SQL"],["Sales Outbound","BD Outbound","MQL"]];
+  return {bd,agency,rows:rows.map((r,i)=>({leadChannel:labels[i][0],subChannel:labels[i][1],type:labels[i][2],
+    planMql:r[0],planSql:r[1],ticp:r[2],arpu:r[3],planRevenue:r[1]*r[3],actMql:r[4],actSql:r[5],actTicp:r[6]}))};
+}
+
+/* ---------- Helpers ---------- */
+const $=s=>document.querySelector(s);
+const money=x=>"$"+Math.round(x).toLocaleString();
+const nf=x=>Math.round(x).toLocaleString();
+function rate(act,plan){return plan>0?act/plan:null;}
+function cls(r){if(r==null)return"none";if(r>=0.9)return"good";if(r>=0.6)return"warn";return"bad";}
+function pctTxt(r){return r==null?"no plan":(r*100).toFixed(0)+"%";}
+
+function sums(m){
+  let pM=0,pS=0,pT=0,pR=0,aM=0,aS=0,aT=0,aR=0;
+  m.rows.forEach(r=>{pM+=r.planMql||0;pS+=r.planSql||0;pT+=r.ticp||0;pR+=r.planRevenue||0;
+    aM+=r.actMql||0;aS+=r.actSql||0;aT+=r.actTicp||0;aR+=(r.actSql||0)*(r.arpu||0);});
+  return {pM,pS,pT,pR,aM,aS,aT,aR};
+}
+
+function barHTML(name,act,plan,fmt){
+  const r=rate(act,plan),c=cls(r),w=r==null?0:Math.min(100,r*100);
+  const f=fmt||nf;
+  return `<div class="bar">
+    <div class="bl"><span class="name">${name}</span><span class="val">${f(act)} / ${f(plan)}</span></div>
+    <div class="track"><i class="fill-${c}" style="width:${w}%"></i></div>
+    <div class="pc txt-${c}">${pctTxt(r)} of plan</div></div>`;
+}
+
+function kpiHTML(label,act,plan,fmt){
+  const r=rate(act,plan),c=cls(r),w=r==null?0:Math.min(100,r*100),f=fmt||nf;
+  return `<div class="card kpi">
+    <div class="kl">${label}</div>
+    <div class="kv">${f(act)}</div>
+    <div class="kp">of ${f(plan)} plan · <span class="txt-${c}">${pctTxt(r)}</span></div>
+    <div class="kbar"><i class="fill-${c}" style="width:${w}%"></i></div></div>`;
+}
+
+function render(data){
+  const mgrs=data.managers||[];
+  const target=data.orgIcpTarget||ORG_ICP_TARGET;
+  // org totals
+  let pM=0,pS=0,pT=0,pR=0,aM=0,aS=0,aT=0,aR=0;
+  mgrs.forEach(m=>{const s=sums(m);pM+=s.pM;pS+=s.pS;pT+=s.pT;pR+=s.pR;aM+=s.aM;aS+=s.aS;aT+=s.aT;aR+=s.aR;});
+
+  const icpR=Math.min(100,target>0?(aT/target*100):0);
+  $("#rollup").innerHTML=`
+    <div class="card icp-hero">
+      <div class="kl">50K ICP lead goal — actual</div>
+      <div class="big">${nf(aT)}</div>
+      <div class="of">of ${nf(target)} ICP target</div>
+      <div class="icp-bar"><i style="width:${icpR}%"></i></div>
+      <div class="vsplan">Plan across managers: ${nf(pT)} TICP · ${pctTxt(rate(aT,pT))} of plan delivered</div>
+    </div>
+    ${kpiHTML("MQL supplied",aM,pM)}
+    ${kpiHTML("SQL output",aS,pS)}
+    ${kpiHTML("TICP landed",aT,pT)}
+    ${kpiHTML("Revenue",aR,pR,money)}`;
+
+  if(!mgrs.length){$("#mgrGrid").innerHTML=`<div class="empty">No responses yet. Once BDs submit the survey, their plans appear here.</div>`;return;}
+
+  $("#mgrGrid").innerHTML=mgrs.map((m,idx)=>{
+    const s=sums(m);
+    const detail=`<div class="detail"><div class="detail-wrap"><table>
+      <thead><tr><th>Channel</th><th>Type</th><th>MQL a/p</th><th>SQL a/p</th><th>TICP a/p</th><th>ARPU</th></tr></thead>
+      <tbody>${m.rows.map(r=>`<tr>
+        <td>${r.subChannel}</td><td>${r.type}</td>
+        <td class="num">${nf(r.actMql||0)} / ${nf(r.planMql||0)}</td>
+        <td class="num">${nf(r.actSql||0)} / ${nf(r.planSql||0)}</td>
+        <td class="num">${nf(r.actTicp||0)} / ${nf(r.ticp||0)}</td>
+        <td class="num">${money(r.arpu||0)}</td></tr>`).join("")}</tbody></table></div></div>`;
+    return `<div class="mgr" data-i="${idx}">
+      <div class="mgr-h"><span class="nm">${m.bd}</span><span class="ag">${m.agency||""}</span><span class="chev">▶</span></div>
+      <div class="mgr-b">
+        ${barHTML("Leads supplied (MQL)",s.aM,s.pM)}
+        ${barHTML("SQL output",s.aS,s.pS)}
+        ${barHTML("TICP (ICP-fit)",s.aT,s.pT)}
+        ${barHTML("Revenue",s.aR,s.pR,money)}
+      </div>${detail}</div>`;
+  }).join("");
+
+  document.querySelectorAll(".mgr-h").forEach(h=>h.addEventListener("click",()=>h.parentElement.classList.toggle("open")));
+  $("#updated").textContent="Updated "+new Date(data.generatedAt||Date.now()).toLocaleString();
+}
+
+async function load(){
+  const banner=$("#banner");
+  if(!ENDPOINT_URL){banner.hidden=false;
+    banner.innerHTML="<b>Preview mode — sample data.</b> Set <code>ENDPOINT_URL</code> to your Apps Script URL for live numbers.";
+    render(SAMPLE);return;}
+  try{
+    const res=await fetch(ENDPOINT_URL,{redirect:"follow"});
+    const data=await res.json();
+    if(data.status!=="ok"&&!data.managers) throw new Error("bad payload");
+    banner.hidden=true;render(data);
+  }catch(e){
+    banner.hidden=false;
+    banner.innerHTML="<b>Couldn't reach the backend — showing sample data.</b> Check the deployment URL and that access is set to “Anyone”.";
+    render(SAMPLE);
+  }
+}
+
+$("#refreshBtn").addEventListener("click",load);
+let timer=setInterval(()=>{if($("#autoToggle").checked)load();},AUTO_MS);
+$("#autoToggle").addEventListener("change",e=>{if(e.target.checked)load();});
+load();
+</script>
+</body>
+</html>
