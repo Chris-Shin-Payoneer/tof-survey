@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>APAC BD · Top-of-Funnel Planning Survey</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  /* ============================================================
+     ADMIN: set ENDPOINT_URL in the script block near the bottom to
+     your Google Apps Script Web App URL so responses auto-aggregate
+     into the team Google Sheet (= your Excel). Leave "" for
+     download-only mode.
+     ============================================================ */
+  :root{
+    --ink:#11203a; --ink-2:#1c2f50;
+    --paper:#f4f2ec; --card:#ffffff; --line:#dcd7ca; --line-soft:#ece8dd;
+    --signal:#ff5a1f; --signal-soft:#fff1ea;
+    --good:#1f8a5b; --good-soft:#e7f4ec;
+    --warn:#b07400; --warn-soft:#fbf2dd;
+    --bad:#c2410c;
+    --muted:#69748a;
+    --mono:ui-monospace,"SFMono-Regular","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --r:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+       font-size:16px;line-height:1.62;-webkit-font-smoothing:antialiased}
+
+  /* ---------- Masthead ---------- */
+  .masthead{background:var(--ink);color:#f3f1ea;padding:34px 22px 30px;border-bottom:3px solid var(--signal)}
+  .masthead .wrap{max-width:920px;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--signal);margin:0 0 12px}
+  .masthead h1{font-size:clamp(24px,4.4vw,34px);line-height:1.12;margin:0 0 14px;font-weight:700;letter-spacing:-.015em}
+  .masthead p{margin:0;color:#c2ccdb;max-width:64ch;font-size:15.5px;line-height:1.6}
+  /* reassurance callout */
+  .callout{background:#fff;border:1px solid var(--line);border-left:5px solid var(--signal);border-radius:var(--r);
+           padding:22px 24px;margin-bottom:26px;box-shadow:0 1px 0 rgba(17,32,58,.03)}
+  .callout .ctag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+                 color:#c2410c;background:var(--signal-soft);border:1px solid #ffd6c2;padding:4px 10px;border-radius:99px;margin-bottom:12px}
+  .callout h3{margin:0 0 10px;font-size:18.5px;font-weight:720;letter-spacing:-.01em;line-height:1.25}
+  .callout p{margin:0 0 10px;font-size:15.5px;line-height:1.62;color:var(--ink-2)}
+  .callout p:last-child{margin-bottom:0}
+  .callout em{font-style:normal;font-weight:700;color:var(--ink);background:linear-gradient(transparent 62%,var(--signal-soft) 62%)}
+  @media (max-width:720px){.callout{padding:18px 18px}.callout h3{font-size:17px}.callout p{font-size:15px}}
+
+  .principle{margin-top:22px;display:block;border:1px solid rgba(255,255,255,.16);border-left:3px solid var(--signal);
+             padding:14px 16px;border-radius:6px;font-size:14px;color:#dfe5ee;background:rgba(255,255,255,.035);line-height:1.55}
+  .principle b{color:#fff}
+
+  /* ---------- Layout ---------- */
+  .page{max-width:920px;margin:0 auto;padding:26px 22px 80px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:26px;overflow:hidden}
+  .panel-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:20px 24px;border-bottom:1px solid var(--line);
+           background:linear-gradient(#fff,#faf8f2)}
+  .panel-h .n{font-family:var(--mono);font-size:13px;color:var(--signal);font-weight:600}
+  .panel-h h2{margin:0;font-size:18px;font-weight:680;letter-spacing:-.01em}
+  .panel-h .sub{margin-left:auto;font-size:13px;color:var(--muted)}
+  .panel-b{padding:26px 24px 28px}
+
+  label.fld{display:block;margin-bottom:24px}
+  label.fld:last-child{margin-bottom:4px}
+  .fld .lab{display:block;font-size:14px;font-weight:650;color:var(--ink-2);margin-bottom:9px}
+  .fld .hint{font-weight:400;color:var(--muted);font-size:13px}
+  select,input[type=text],input[type=number],textarea{
+    width:100%;font-family:var(--sans);font-size:16px;color:var(--ink);background:#fff;
+    border:1px solid var(--line);border-radius:9px;padding:13px 15px;outline:none;
+    transition:border-color .12s,box-shadow .12s;min-height:50px}
+  textarea{min-height:auto;line-height:1.55}
+  input[type=number]{font-family:var(--mono);text-align:right}
+  select:focus,input:focus,textarea:focus{border-color:var(--signal);box-shadow:0 0 0 3px var(--signal-soft)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+  /* ---------- Channel cards ---------- */
+  .chan{border:1px solid var(--line);border-radius:var(--r);margin-bottom:22px;overflow:hidden;background:#fff}
+  .chan:last-child{margin-bottom:0}
+  .chan-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 20px;
+          background:#faf8f2;border-bottom:1px solid var(--line)}
+  .chan-h .ch-channel{font-weight:680;font-size:16px}
+  .chan-h .ch-sub{color:var(--muted);font-size:14.5px}
+  .chan-h .ch-sub::before{content:"·";margin:0 9px;color:var(--line)}
+  .tag{font-family:var(--mono);font-size:11px;letter-spacing:.05em;padding:4px 9px;border-radius:99px;font-weight:600}
+  .tag.sql{background:var(--signal-soft);color:#c2410c;border:1px solid #ffd6c2}
+  .tag.mql{background:#eef2fb;color:#2c4a8c;border:1px solid #d4def4}
+
+  .chan-b{padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .chan-b .full{grid-column:1/-1}
+
+  /* Score A designation toggle */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:99px;overflow:hidden;background:#fff}
+  .seg button{font-family:var(--mono);font-size:13px;font-weight:600;border:0;background:#fff;color:var(--muted);
+              padding:9px 18px;cursor:pointer;min-height:44px}
+  .seg button.on{background:var(--ink);color:#fff}
+  .seg-wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .seg-note{font-size:13px;color:var(--muted)}
+
+  /* touch chips */
+  .touch{display:flex;flex-wrap:wrap;gap:10px}
+  .touch label{display:inline-flex;align-items:center;gap:9px;cursor:pointer;border:1px solid var(--line);
+               border-radius:99px;padding:11px 16px;font-size:14.5px;background:#fff;user-select:none;
+               transition:.12s;min-height:44px}
+  .touch input{margin:0;width:18px;height:18px;accent-color:var(--signal)}
+  .touch label:hover{border-color:#bdb6a4}
+  .touch label.on{background:var(--signal-soft);border-color:var(--signal);color:#9a3412;font-weight:600}
+
+  /* live readouts */
+  .readout{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px;background:#fbfaf5;
+           border:1px dashed var(--line);border-radius:10px;padding:18px 20px}
+  .metric .ml{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .metric .mv{font-family:var(--mono);font-size:26px;font-weight:600;margin-top:4px;line-height:1.05}
+  .metric .md{font-size:12.5px;color:var(--muted);margin-top:5px}
+  .mv.ok{color:var(--good)} .mv.warn{color:var(--warn)} .mv.idle{color:var(--muted)}
+
+  /* reconcile badge */
+  .reconcile{margin-top:6px;border:1px solid var(--line);border-radius:9px;padding:14px 16px;background:#fbfaf5;
+             display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px}
+  .reconcile .pill{font-family:var(--mono);font-size:13px;font-weight:600;padding:5px 11px;border-radius:99px}
+  .pill.ok{background:var(--good-soft);color:var(--good)}
+  .pill.off{background:var(--warn-soft);color:var(--warn)}
+  .reconcile .use{margin-left:auto}
+  .linklike{background:none;border:0;color:var(--signal);font-weight:600;cursor:pointer;font-size:14px;padding:6px 4px;min-height:auto}
+  .linklike:hover{text-decoration:underline}
+
+  /* plan totals */
+  .totals{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .tot{background:#faf8f2;border:1px solid var(--line);border-radius:10px;padding:16px}
+  .tot .tl{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .tot .tv{font-family:var(--mono);font-size:24px;font-weight:600;margin-top:5px;color:var(--ink)}
+
+  /* buttons */
+  .actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  button.btn{font-family:var(--sans);font-size:15.5px;font-weight:650;cursor:pointer;border-radius:9px;
+             padding:15px 24px;border:1px solid transparent;transition:.12s;min-height:52px}
+  .btn-primary{background:var(--signal);color:#fff}
+  .btn-primary:hover{background:#e64a12}
+  .btn-primary:disabled{background:#e8b9a6;cursor:not-allowed}
+  .btn-ghost{background:#fff;border-color:var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:#bdb6a4}
+  .status{font-size:14px;color:var(--muted)}
+  .status.ok{color:var(--good);font-weight:600}
+  .status.err{color:#b91c1c;font-weight:600}
+  .note{font-size:13.5px;color:var(--muted);margin:14px 0 0;line-height:1.55}
+  .req::after{content:" *";color:var(--signal)}
+
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--ink);
+         color:#fff;padding:15px 20px;border-radius:9px;box-shadow:0 12px 34px rgba(0,0,0,.26);opacity:0;
+         pointer-events:none;transition:.25s;font-size:14.5px;max-width:90vw;border-left:3px solid var(--signal)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .summary{margin-top:20px;border:1px solid var(--line);border-radius:10px;overflow:auto;display:none}
+  .summary table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
+  .summary th,.summary td{padding:11px 12px;border-bottom:1px solid var(--line-soft);text-align:left;white-space:nowrap}
+  .summary th{background:#faf8f2;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .summary td.num{font-family:var(--mono);text-align:right}
+
+  @media (max-width:720px){
+    body{font-size:15.5px}
+    .masthead{padding:26px 18px 24px}
+    .page{padding:20px 16px 70px}
+    .panel-b{padding:20px 18px 22px}
+    .panel-h{padding:16px 18px}
+    .panel-h .sub{margin-left:0;width:100%}
+    .grid2,.chan-b{grid-template-columns:1fr;gap:16px}
+    .readout{grid-template-columns:1fr 1fr;padding:16px}
+    .totals{grid-template-columns:1fr 1fr}
+    .actions{flex-direction:column;align-items:stretch}
+    button.btn{width:100%}
+    .status{text-align:center}
+  }
+  @media (max-width:420px){
+    .metric .mv{font-size:22px}
+    .readout{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap">
+      <p class="eyebrow">APAC Business Development · Acquisition Planning</p>
+      <h1>Top-of-Funnel (ToF) Planning Survey</h1>
+      <p>Plan your monthly funnel from the revenue target backward. For each lead channel you own, tell us the volume you expect, how you'll work it, and the deal value you can stand behind — so capacity, touch commitment, and ARPU all line up.</p>
+      <span class="principle"><b>Working principle:</b> start from the revenue target → derive the SQLs needed → size the ToF → match channel capacity &amp; touch commitment. <b>All numbers are monthly.</b></span>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="callout">
+      <span class="ctag">Read this first</span>
+      <h3>This is a planning principle, not a target.</h3>
+      <p>Sharing this isn't about pushing numbers onto you. We're using your input to set a <em>principle</em> for how many leads we should request from each channel — and how hard we need to lean on outbound sales to fill the rest.</p>
+      <p>So <em>don't anchor on current targets</em>. Think about your realistic direct-approach capacity, and tell us purely how many leads and SQLs <em>you</em> actually need to work your patch well. We build the plan around that — not the other way round.</p>
+    </div>
+
+    <!-- 01 Identify -->
+    <section class="panel">
+      <div class="panel-h"><span class="n">01</span><h2>Who's filling this in</h2></div>
+      <div class="panel-b">
+        <label class="fld">
+          <span class="lab req">Your name</span>
+          <select id="bd"><option value="">Select your name…</option></select>
+        </label>
+        <p class="note">Your channel list and assigned marketing agency load once you pick your name.</p>
+      </div>
+    </section>
+
+    <!-- 02 Capacity -->
+    <section class="panel" id="capacityPanel" hidden>
+      <div class="panel-h"><span class="n">02</span><h2>Capacity &amp; context</h2><span class="sub">a realistic ceiling, not a stretch goal</span></div>
+      <div class="panel-b">
+        <div class="grid2">
+          <label class="fld">
+            <span class="lab">Leads you can realistically handle / month <span class="hint">(total across all channels)</span></span>
+            <input type="number" id="cap_total" min="0" step="1" placeholder="e.g. 120" />
+          </label>
+          <label class="fld">
+            <span class="lab">Of those, # you can give direct 1:1 touch <span class="hint">(call / WhatsApp)</span></span>
+            <input type="number" id="cap_touch" min="0" step="1" placeholder="e.g. 40" />
+          </label>
+        </div>
+        <div class="reconcile" id="reconcile">
+          <span>Channel MQL total (from section 03):</span>
+          <span class="pill off" id="reconcilePill">—</span>
+          <span class="seg-note" id="reconcileMsg">Fill in your channels below; this should match your monthly capacity.</span>
+          <button class="linklike use" id="useSum" hidden>Set capacity to channel total →</button>
+        </div>
+        <label class="fld" style="margin-top:24px">
+          <span class="lab">Main reasons leads don't convert <span class="hint">(select all that apply)</span></span>
+          <div class="touch" id="bottlenecks"></div>
+        </label>
+        <label class="fld">
+          <span class="lab">Ideal scenario — if every channel works as expected <span class="hint">(optional)</span></span>
+          <textarea id="ideal" rows="2" placeholder="What would good look like next quarter? Any channel you'd lean into or drop?"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <!-- 03 Channels -->
+    <section class="panel" id="channelPanel" hidden>
+      <div class="panel-h"><span class="n">03</span><h2>Channel-by-channel plan</h2><span class="sub">Conversion &amp; revenue calculate live</span></div>
+      <div class="panel-b" id="channels"></div>
+    </section>
+
+    <!-- 04 Review -->
+    <section class="panel" id="submitPanel" hidden>
+      <div class="panel-h"><span class="n">04</span><h2>Review &amp; submit</h2></div>
+      <div class="panel-b">
+        <div class="totals" id="totals">
+          <div class="tot"><div class="tl">Total MQL / mo</div><div class="tv" id="t_mql">0</div></div>
+          <div class="tot"><div class="tl">Total SQL / mo</div><div class="tv" id="t_sql">0</div></div>
+          <div class="tot"><div class="tl">Total TICP / mo</div><div class="tv" id="t_ticp">0</div></div>
+          <div class="tot"><div class="tl">Plan revenue / mo</div><div class="tv" id="t_rev">$0</div></div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="submitBtn">Submit my plan</button>
+          <button class="btn btn-ghost" id="exportBtn">Download my response (.xlsx)</button>
+          <span class="status" id="status"></span>
+        </div>
+        <p class="note" id="modeNote"></p>
+        <div class="summary" id="summary"></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ===========================================================
+   1) ADMIN CONFIG — paste your Apps Script Web App URL.
+      Leave "" for download-only mode (no auto-aggregation).
+   =========================================================== */
+const ENDPOINT_URL = "";
+
+/* Reference: a typical deal is ~$400 ARPU. Pre-filled, editable. */
+const DEFAULT_ARPU = 400;
+
+/* 2) Roster — keep the SAME ORDER as the Google Sheet / Excel blocks. */
+const ROSTER = [
+  { name:"Jay Gye",        agency:"Growth Automation" },
+  { name:"Casa Hoang",     agency:"Telestar" },
+  { name:"Kunsuk Kim",     agency:"Growth Automation" },
+  { name:"Wayne Nguyen",   agency:"Telestar" },
+  { name:"Patrick Simeon", agency:"ScaleMill" },
+  { name:"Natalie Fong",   agency:"ScaleMill" },
+  { name:"Trang Nguyen",   agency:"Telestar" },
+  { name:"Mizuki Toku",    agency:"Growth Automation" },
+  { name:"Jaejun Lee",     agency:"Growth Automation" },
+  { name:"Son Le",         agency:"Growth Automation" },
+];
+
+/* Channel rows per BD. Score A's MQL/SQL is chosen by the BD (varies by market). */
+function channelsFor(agency){
+  return [
+    { leadChannel:"Marketing",        sub:"Score A Leads",   type:"SQL", toggleType:true },
+    { leadChannel:"Marketing Agency", sub:agency,            type:"MQL" },
+    { leadChannel:"AnP",              sub:"CSP Leads",        type:"SQL" },
+    { leadChannel:"AnP",              sub:"Other AnP Leads",  type:"SQL" },
+    { leadChannel:"Sales Outbound",   sub:"SDR",              type:"SQL" },
+    { leadChannel:"Sales Outbound",   sub:"BD Outbound",      type:"MQL" },
+  ];
+}
+
+const TOUCH_OPTIONS = ["Call","Email","Salesloft","Meeting"];
+const BOTTLENECKS = ["Lead quality","Timing","ICP mismatch","Long sales cycle","Other"];
+
+const $ = s => document.querySelector(s);
+const bdSel = $("#bd");
+const channelsEl = $("#channels");
+let CURRENT = null;
+
+ROSTER.forEach(r=>{const o=document.createElement("option");o.value=r.name;o.textContent=r.name;bdSel.appendChild(o);});
+
+const blEl=$("#bottlenecks");
+BOTTLENECKS.forEach(b=>{
+  const l=document.createElement("label");
+  l.innerHTML=`<input type="checkbox" value="${b}"> ${b}`;
+  l.querySelector("input").addEventListener("change",e=>l.classList.toggle("on",e.target.checked));
+  blEl.appendChild(l);
+});
+
+function num(v){const n=parseFloat(v);return isNaN(n)?null:n;}
+function money(x){return "$"+Math.round(x).toLocaleString();}
+function pct(x){return (x*100).toFixed(1)+"%";}
+
+function renderChannels(roster){
+  const chans=channelsFor(roster.agency).map((c,i)=>({...c,idx:i}));
+  CURRENT={name:roster.name,agency:roster.agency,channels:chans};
+  channelsEl.innerHTML="";
+
+  chans.forEach(c=>{
+    const card=document.createElement("div");
+    card.className="chan";
+    const toggle = c.toggleType ? `
+      <div class="full">
+        <div class="seg-wrap">
+          <span class="lab" style="margin:0">In your market, Score A leads are tracked as:</span>
+          <div class="seg" data-seg="${c.idx}">
+            <button type="button" data-v="MQL">MQL</button>
+            <button type="button" data-v="SQL">SQL</button>
+          </div>
+          <span class="seg-note">Some markets treat Score A as already-qualified (SQL); others as MQL.</span>
+        </div>
+      </div>` : "";
+    card.innerHTML=`
+      <div class="chan-h">
+        <span class="ch-channel">${c.leadChannel}</span>
+        <span class="ch-sub">${c.sub}</span>
+        <span class="tag ${c.type.toLowerCase()}" data-tag="${c.idx}">tracked as ${c.type}</span>
+      </div>
+      <div class="chan-b">
+        ${toggle}
+        <label class="fld"><span class="lab">Expected MQL # / month</span>
+          <input type="number" min="0" step="1" data-k="mql" data-i="${c.idx}" placeholder="0" /></label>
+        <label class="fld"><span class="lab">Expected SQL # / month</span>
+          <input type="number" min="0" step="1" data-k="sql" data-i="${c.idx}" placeholder="0" /></label>
+        <label class="fld"><span class="lab">TICP # <span class="hint">(target ICP-fit accounts — counts toward the 50K ICP goal)</span></span>
+          <input type="number" min="0" step="1" data-k="ticp" data-i="${c.idx}" placeholder="0" /></label>
+        <label class="fld"><span class="lab">ARPU <span class="hint">(revenue per deal, $ — typical ≈ $400)</span></span>
+          <input type="number" min="0" step="10" data-k="arpu" data-i="${c.idx}" value="${DEFAULT_ARPU}" /></label>
+        <label class="fld full"><span class="lab">Touch level <span class="hint">(how you work this channel)</span></span>
+          <div class="touch" data-touch="${c.idx}">
+            ${TOUCH_OPTIONS.map(t=>`<label><input type="checkbox" value="${t}"> ${t}</label>`).join("")}
+          </div></label>
+        <div class="readout">
+          <div class="metric">
+            <div class="ml">Conversion · SQL ÷ MQL</div>
+            <div class="mv idle" data-out="conv" data-i="${c.idx}">—</div>
+            <div class="md" data-out="convd" data-i="${c.idx}">enter MQL &amp; SQL</div>
+          </div>
+          <div class="metric">
+            <div class="ml">Plan revenue · SQL × ARPU</div>
+            <div class="mv idle" data-out="rev" data-i="${c.idx}">—</div>
+            <div class="md" data-out="revd" data-i="${c.idx}">enter SQL &amp; ARPU</div>
+          </div>
+        </div>
+      </div>`;
+    channelsEl.appendChild(card);
+  });
+
+  // wire numeric inputs
+  channelsEl.querySelectorAll("input[data-k]").forEach(inp=>{
+    inp.addEventListener("input",()=>{recalc(+inp.dataset.i);updateTotals();});
+  });
+  // wire touch chips
+  channelsEl.querySelectorAll("[data-touch] input").forEach(inp=>{
+    inp.addEventListener("change",e=>e.target.closest("label").classList.toggle("on",e.target.checked));
+  });
+  // wire Score A segmented toggle
+  channelsEl.querySelectorAll(".seg").forEach(seg=>{
+    const i=+seg.dataset.seg;
+    seg.querySelectorAll("button").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        seg.querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+        btn.classList.add("on");
+        const v=btn.dataset.v;
+        CURRENT.channels[i].type=v;
+        const tag=channelsEl.querySelector(`[data-tag="${i}"]`);
+        tag.textContent="tracked as "+v;tag.className="tag "+v.toLowerCase();
+      });
+    });
+  });
+
+  $("#capacityPanel").hidden=false;$("#channelPanel").hidden=false;$("#submitPanel").hidden=false;
+  $("#status").textContent="";$("#summary").style.display="none";
+  updateTotals();
+}
+
+function readRow(i){
+  const g=k=>channelsEl.querySelector(`input[data-k="${k}"][data-i="${i}"]`).value;
+  const touches=[...channelsEl.querySelectorAll(`[data-touch="${i}"] input:checked`)].map(x=>x.value);
+  return {mql:num(g("mql")),sql:num(g("sql")),ticp:num(g("ticp")),arpu:num(g("arpu")),touch:touches};
+}
+
+function recalc(i){
+  const {mql,sql,arpu}=readRow(i);
+  const set=(o,t,c)=>{const el=channelsEl.querySelector(`[data-out="${o}"][data-i="${i}"]`);el.textContent=t;if(c)el.className="mv "+c;};
+  const setd=(o,t)=>{channelsEl.querySelector(`[data-out="${o}"][data-i="${i}"]`).textContent=t;};
+
+  if(mql!=null&&sql!=null&&mql>0){
+    const r=sql/mql;set("conv",pct(r),r>1?"warn":"ok");
+    setd("convd",r>1?"SQL exceeds MQL — check inputs":`${sql} SQL from ${mql} MQL`);
+  }else{set("conv","—","idle");setd("convd","enter MQL & SQL");}
+
+  if(sql!=null&&arpu!=null&&sql>0){
+    set("rev",money(sql*arpu),"ok");setd("revd",`${sql} SQL × ${money(arpu)}`);
+  }else{set("rev","—","idle");setd("revd","enter SQL & ARPU");}
+}
+
+function planSums(){
+  let mql=0,sql=0,ticp=0,rev=0;
+  if(CURRENT) CURRENT.channels.forEach(c=>{
+    const r=readRow(c.idx);
+    mql+=r.mql||0;sql+=r.sql||0;ticp+=r.ticp||0;
+    if(r.sql&&r.arpu) rev+=r.sql*r.arpu;
+  });
+  return {mql,sql,ticp,rev};
+}
+
+function updateTotals(){
+  const s=planSums();
+  $("#t_mql").textContent=s.mql.toLocaleString();
+  $("#t_sql").textContent=s.sql.toLocaleString();
+  $("#t_ticp").textContent=s.ticp.toLocaleString();
+  $("#t_rev").textContent=money(s.rev);
+  // capacity reconciliation
+  const cap=num($("#cap_total").value);
+  const pill=$("#reconcilePill"),msg=$("#reconcileMsg"),use=$("#useSum");
+  pill.textContent=s.mql.toLocaleString()+" leads/mo";
+  if(cap==null){pill.className="pill off";msg.textContent="Set your monthly capacity above — it should equal this channel total.";use.hidden=(s.mql<=0);}
+  else if(cap===s.mql){pill.className="pill ok";msg.textContent="Matches your monthly capacity. ✓";use.hidden=true;}
+  else{const d=s.mql-cap;pill.className="pill off";
+    msg.textContent=`Off by ${Math.abs(d).toLocaleString()} — channel total ${d>0?"exceeds":"is below"} your stated capacity (${cap.toLocaleString()}).`;
+    use.hidden=false;}
+}
+$("#cap_total").addEventListener("input",updateTotals);
+$("#useSum").addEventListener("click",()=>{$("#cap_total").value=planSums().mql;updateTotals();});
+
+bdSel.addEventListener("change",()=>{
+  const r=ROSTER.find(x=>x.name===bdSel.value);
+  if(r){renderChannels(r);window.scrollTo({top:$("#capacityPanel").offsetTop-12,behavior:"smooth"});}
+});
+
+function collect(){
+  if(!CURRENT) return null;
+  const rows=CURRENT.channels.map(c=>{
+    const r=readRow(c.idx);
+    const conv=(r.mql&&r.mql>0&&r.sql!=null)?r.sql/r.mql:null;
+    const rev=(r.sql&&r.arpu&&r.sql>0)?r.sql*r.arpu:null;
+    return {leadChannel:c.leadChannel,subChannel:c.sub,type:c.type,
+            mql:r.mql,sql:r.sql,ticp:r.ticp,arpu:r.arpu,touch:r.touch.join(", "),
+            conversion:conv,planRevenue:rev};
+  });
+  return {bd:CURRENT.name,agency:CURRENT.agency,
+    capacityTotal:num($("#cap_total").value),capacityTouch:num($("#cap_touch").value),
+    bottlenecks:[...document.querySelectorAll("#bottlenecks input:checked")].map(x=>x.value).join(", "),
+    ideal:$("#ideal").value.trim(),rows,submittedAt:new Date().toISOString()};
+}
+
+function showSummary(p){
+  const s=$("#summary");s.style.display="block";
+  s.innerHTML=`<table>
+    <thead><tr><th>Channel</th><th>Sub-channel</th><th>Type</th><th>MQL</th><th>SQL</th><th>TICP</th><th>ARPU</th><th>Conv.</th><th>Plan Rev.</th><th>Touch</th></tr></thead>
+    <tbody>${p.rows.map(r=>`<tr>
+      <td>${r.leadChannel}</td><td>${r.subChannel}</td><td>${r.type}</td>
+      <td class="num">${r.mql??"—"}</td><td class="num">${r.sql??"—"}</td><td class="num">${r.ticp??"—"}</td>
+      <td class="num">${r.arpu!=null?money(r.arpu):"—"}</td>
+      <td class="num">${r.conversion!=null?(r.conversion*100).toFixed(1)+"%":"—"}</td>
+      <td class="num">${r.planRevenue!=null?money(r.planRevenue):"—"}</td>
+      <td>${r.touch||"—"}</td></tr>`).join("")}</tbody></table>`;
+}
+
+function validate(p){
+  const errs=[];
+  if(!p.bd) errs.push("Pick your name first.");
+  const any=p.rows.some(r=>r.mql!=null||r.sql!=null||r.ticp!=null||r.touch);
+  if(!any) errs.push("Add at least one channel's numbers before submitting.");
+  p.rows.forEach(r=>{
+    if(r.mql!=null&&r.sql!=null&&r.sql>r.mql) errs.push(`${r.subChannel}: SQL (${r.sql}) is higher than MQL (${r.mql}).`);
+    if(r.ticp!=null&&r.mql!=null&&r.ticp>r.mql) errs.push(`${r.subChannel}: TICP (${r.ticp}) exceeds MQL (${r.mql}).`);
+  });
+  return errs;
+}
+
+let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),3200);}
+
+function exportXlsx(p){
+  const head=["BD","Lead Channel","Sub-channel","MQL? SQL?","Expected MQL #","Expected SQL #","Touch Level","Conversion Rate","ARPU","TICP #","Plan Revenue"];
+  const aoa=[head];
+  p.rows.forEach((r,i)=>aoa.push([
+    i===0?p.bd:"",r.leadChannel,r.subChannel,r.type,
+    r.mql??"",r.sql??"",r.touch||"",
+    r.conversion!=null?Math.round(r.conversion*1000)/1000:"",
+    r.arpu??"",r.ticp??"",r.planRevenue!=null?Math.round(r.planRevenue):""
+  ]));
+  aoa.push([]);
+  aoa.push(["Monthly lead capacity",p.capacityTotal??""]);
+  aoa.push(["1:1 touch capacity",p.capacityTouch??""]);
+  aoa.push(["Bottlenecks",p.bottlenecks||""]);
+  aoa.push(["Ideal scenario",p.ideal||""]);
+  aoa.push(["Submitted at",p.submittedAt]);
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"]=[{wch:14},{wch:16},{wch:18},{wch:11},{wch:15},{wch:15},{wch:22},{wch:14},{wch:10},{wch:9},{wch:13}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"ToF Plan");
+  XLSX.writeFile(wb,`ToF_${p.bd.replace(/\s+/g,"_")}.xlsx`);
+}
+
+async function submitToEndpoint(p){
+  const res=await fetch(ENDPOINT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify(p),redirect:"follow"});
+  let ok=res.ok;try{const j=await res.json();ok=ok&&j&&j.status==="ok";}catch(e){}
+  return ok;
+}
+
+$("#exportBtn").addEventListener("click",()=>{
+  const p=collect();if(!p){toast("Pick your name first.");return;}
+  const e=validate(p);if(e.length){$("#status").textContent=e[0];$("#status").className="status err";return;}
+  exportXlsx(p);showSummary(p);
+  $("#status").textContent="Excel downloaded — send it to Chris if the backend isn't set up.";$("#status").className="status ok";
+});
+
+$("#submitBtn").addEventListener("click",async()=>{
+  const p=collect();if(!p){toast("Pick your name first.");return;}
+  const e=validate(p);if(e.length){$("#status").textContent=e[0];$("#status").className="status err";toast(e[0]);return;}
+  showSummary(p);
+  if(!ENDPOINT_URL){exportXlsx(p);
+    $("#status").textContent="No server configured — downloaded your Excel instead. Send it to Chris.";$("#status").className="status ok";
+    toast("Saved as Excel download.");return;}
+  const btn=$("#submitBtn");btn.disabled=true;btn.textContent="Submitting…";
+  $("#status").textContent="Sending to the team sheet…";$("#status").className="status";
+  try{
+    if(await submitToEndpoint(p)){$("#status").textContent="Submitted. Your plan is in the team sheet — thanks!";
+      $("#status").className="status ok";toast("Submitted to the team sheet.");}
+    else throw new Error("bad response");
+  }catch(err){exportXlsx(p);
+    $("#status").textContent="Couldn't reach the server — downloaded your Excel as backup. Send it to Chris.";
+    $("#status").className="status err";toast("Network issue — saved as Excel backup.");}
+  finally{btn.disabled=false;btn.textContent="Submit my plan";}
+});
+
+$("#modeNote").textContent=ENDPOINT_URL
+  ? "Responses are written straight into the team Google Sheet (your Excel) and feed the live dashboard."
+  : "Download-only mode: no server is set yet, so each response saves as an .xlsx for you to send in.";
+</script>
+</body>
+</html>
